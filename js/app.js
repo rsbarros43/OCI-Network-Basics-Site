@@ -35,11 +35,20 @@ const chapterOrder = ['home','terraform-quick-setup',
   'tos-e-qos'
 ];
 
-function showView(target){
+function showView(target, updateHash){
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const el = document.getElementById('view-' + target) || document.querySelector('[data-view="' + target + '"]');
   if(el){ el.classList.add('active'); }
-  document.querySelectorAll('.nav-link').forEach(a=>a.classList.toggle('active', a.dataset.target === target));
+  document.querySelectorAll('.nav-link').forEach(a=>{
+    const active = a.dataset.target === target;
+    a.classList.toggle('active', active);
+    if(active){ a.setAttribute('aria-current','page'); } else { a.removeAttribute('aria-current'); }
+  });
+  if(updateHash !== false){
+    history.pushState({view:target}, '', '#' + target);
+  }
+  const mainEl = document.getElementById('main-content');
+  if(mainEl){ mainEl.focus({preventScroll:true}); }
   window.scrollTo({top:0, behavior:'smooth'});
 }
 
@@ -47,6 +56,23 @@ document.querySelectorAll('.nav-link,.nav-card').forEach(el=>{
   el.addEventListener('click', e=>{
     e.preventDefault();
     showView(el.dataset.target);
+  });
+});
+
+// Deep-linking: abre o capítulo certo direto pela URL (#capitulo) e
+// respeita os botões voltar/avançar do navegador.
+window.addEventListener('popstate', e=>{
+  const target = (e.state && e.state.view) || location.hash.replace('#','') || 'home';
+  if(target !== 'capitulos'){ showView(target, false); }
+});
+
+document.addEventListener('DOMContentLoaded', ()=>{
+  const initial = location.hash.replace('#','');
+  if(initial && initial !== 'capitulos' && (document.getElementById('view-' + initial) || document.querySelector('[data-view="' + initial + '"]'))){
+    showView(initial, false);
+  }
+  document.querySelectorAll('.doc-section.view img, figure img').forEach(img=>{
+    if(!img.hasAttribute('loading')) img.setAttribute('loading','lazy');
   });
 });
 

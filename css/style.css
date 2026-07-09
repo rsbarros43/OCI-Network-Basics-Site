@@ -473,3 +473,33 @@ line-height:1.7;
 @media(max-width:900px){
   .learning-grid{grid-template-columns:1fr}
 }
+
+
+/* v0.8.0 - Acessibilidade e qualidade enterprise */
+.skip-link{
+  position:absolute;
+  left:12px;
+  top:-60px;
+  background:#0b1116;
+  color:#dffbff;
+  border:1px solid rgba(0,229,255,.4);
+  padding:10px 16px;
+  border-radius:10px;
+  z-index:100;
+  transition:top .15s ease;
+}
+.skip-link:focus{
+  top:12px;
+}
+a:focus-visible,
+button:focus-visible,
+.topic-card:focus-visible,
+input.search:focus-visible{
+  outline:2px solid var(--cyan);
+  outline-offset:2px;
+}
+.sidebar a[aria-current="page"]{
+  background:linear-gradient(90deg,rgba(255,79,0,.18),rgba(0,229,255,.08));
+  border-color:rgba(255,79,0,.45);
+}
+img{max-width:100%;height:auto}

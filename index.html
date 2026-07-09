@@ -3,10 +3,35 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>OCI Network Basics | Guia Profissional</title>
+<title>OCI Network Basics | Guia Profissional de Redes Oracle Cloud Infrastructure</title>
+<meta name="description" content="Guia técnico e visual sobre redes no Oracle Cloud Infrastructure (OCI): VCN, sub-redes, DRG, peering, DNS, firewall, policy routing, BGP e Terraform, com diagramas e exemplos práticos.">
+<meta name="keywords" content="OCI, Oracle Cloud Infrastructure, VCN, DRG, DNS, Firewall, BGP, Terraform, Networking, Cloud Networking">
+<meta name="author" content="Renato Barros">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://rsbarros43.github.io/OCI-Network-Basics-Site/">
+
+<!-- Open Graph / redes sociais -->
+<meta property="og:type" content="website">
+<meta property="og:title" content="OCI Network Basics | Guia Profissional de Redes Oracle Cloud Infrastructure">
+<meta property="og:description" content="Guia técnico e visual sobre redes no OCI: VCN, DRG, DNS, Firewall, Policy Routing, BGP e Terraform.">
+<meta property="og:url" content="https://rsbarros43.github.io/OCI-Network-Basics-Site/">
+<meta property="og:image" content="https://rsbarros43.github.io/OCI-Network-Basics-Site/assets/img/oci-network-routing-1.png">
+<meta property="og:locale" content="pt_BR">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="OCI Network Basics | Guia Profissional">
+<meta name="twitter:description" content="Guia técnico e visual sobre redes no Oracle Cloud Infrastructure.">
+<meta name="twitter:image" content="https://rsbarros43.github.io/OCI-Network-Basics-Site/assets/img/oci-network-routing-1.png">
+
+<meta name="theme-color" content="#070a0d">
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg">
+<link rel="alternate icon" href="assets/favicon.svg">
+
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+<a class="skip-link" href="#main-content">Pular para o conteúdo</a>
 <header class="topbar">
   <div class="brand"><div class="brand-mark">OCI</div><div>OCI Network Basics<small>Guia visual de redes Oracle Cloud Infrastructure</small></div></div>
   <input class="search" placeholder="Pesquisar capítulos...">
@@ -43,7 +68,7 @@
     </div>
   </aside>
 
-  <main class="content">
+  <main class="content" id="main-content" tabindex="-1">
     <div class="view active" id="view-home">
 
 <section class="hero hero-mysql" id="inicio">
@@ -355,7 +380,7 @@ terraform destroy</code></pre></div>
 <p>A sub-rede atua como uma unidade de configuração para os recursos criados dentro dela, mais especificamente para as VNICs que ali forem criadas. Isso significa que todas as VNICs e outros recursos em nuvem criados na mesma sub-rede compartilham a mesma <strong>Route Table</strong>, <strong>Security Lists</strong> e <strong>DHCP Options</strong>.</p>
 <p>Um aspecto relevante ao criar uma nova VCN, no que diz respeito ao roteamento, é que ela vem automaticamente com uma route table padrão (``<code>Default Route Table for &lt;NOME-DA-VCN&gt;</code>``). Todas as sub-redes criadas dentro dessa VCN, a menos que especificado de outra forma, utilizarão essa mesma route table. Isso pode dificultar a configuração do roteamento quando as sub-redes dessa VCN exigem configurações de roteamento de forma independente.</p>
 <p>Por exemplo, em uma VCN que contém duas sub-redes, uma pública e outra privada, <strong>é esperado que cada sub-rede tenha sua própria tabela de roteamento</strong>. A sub-rede pública precisa de uma rota padrão que direcione o tráfego para o <strong>Internet Gateway (IGW)</strong>, permitindo que os recursos criados recebam e enviem tráfego da Internet. Por outro lado, na sub-rede privada, a rota padrão costuma direcionar o tráfego para um <strong>NAT Gateway (NGW)</strong> ou para o <strong>DRG (Dynamic Routing Gateway)</strong>.</p>
-<figure><img src="assets/assets/img/oci-vcn-1.png" alt="VCN Default Route Table #1"><figcaption>VCN Default Route Table #1</figcaption></figure>
+<figure><img src="assets/img/oci-vcn-1.png" alt="VCN Default Route Table #1"><figcaption>VCN Default Route Table #1</figcaption></figure>
 <p><strong>A boa prática que fica é:</strong></p>
 <div class="step">→ Criar a VCN.</div>
 <div class="step">→ Criar os Gateways de Comunicação necessários da VCN (Internet Gateway, Nat Gateway e Service Gateway).</div>
@@ -365,7 +390,7 @@ terraform destroy</code></pre></div>
 <div class="step">→ OPCIONAL: Se necessário, criar os DHCP Options de forma independente, um para cada sub-rede (pessoalmente, prefiro utilizar o DHCP Options que foi criado junto com a VCN para todas as sub-redes da VCN).</div>
 <div class="step">→ Criar a(s) sub-redes e utilizar a tabela de roteamento e a Security List criadas de forma independente para cada sub-rede.</div>
 <p>O resultado final, por exemplo, para cada VCN, será similar ao diagrama abaixo:</p>
-<figure><img src="assets/assets/img/oci-vcn-2.png" alt="VCN Default Route Table #2"><figcaption>VCN Default Route Table #2</figcaption></figure>
+<figure><img src="assets/img/oci-vcn-2.png" alt="VCN Default Route Table #2"><figcaption>VCN Default Route Table #2</figcaption></figure>
 <h3 id="comandos-de-exemplo">Comandos de Exemplo</h3>
 <h4 id="vcn">VCN</h4>
 <div class="code-card"><div class="code-head"><span>bash</span><button class="copy">Copiar</button></div><pre><code>
@@ -548,7 +573,7 @@ $  oci network route-table update \
 <h3 id="fluxo-de-decis-o-de-roteamento">Fluxo de Decisão de Roteamento</h3>
 <p>O fluxo de roteamento, ou a ordem de avaliação das regras de roteamento para alcançar uma rede diferente, inicia-se sempre no host e, em seguida, passa pela tabela de rotas da sub-rede.</p>
 <p>Considere o exemplo a seguir: um compute instance com uma VNIC configurada com o endereço IP <strong>10.100.20.10</strong> deseja acessar a Internet, por exemplo, o endereço <strong>8.8.8.8</strong>.</p>
-<figure><img src="assets/assets/img/oci-subnet-1.png" alt="VCN Default Route Table #2"><figcaption>VCN Default Route Table #2</figcaption></figure>
+<figure><img src="assets/img/oci-subnet-1.png" alt="VCN Default Route Table #2"><figcaption>VCN Default Route Table #2</figcaption></figure>
 <div class="step">→ A primeira decisão de roteamento ocorre dentro do host, onde o sistema operacional consulta sua própria tabela de rotas para determinar qual é o próximo destino do pacote. Nesse caso, a tabela de rotas do host aponta para o endereço IP **10.100.20.1**, ou seja, o next-hop é o gateway da sub-rede.</div>
 <div class="step">→ Quando o pacote chega ao gateway da sub-rede, uma nova decisão de roteamento entra em ação. Nesse ponto, a tabela de rotas associada à sub-rede é utilizada para determinar o próximo salto em direção à Internet, que, neste exemplo, é o NAT Gateway. A partir disso, o pacote pode alcançar endereços externos, como na Internet.</div></section>
 <section class="doc-section view" " id="nota-sobre-vnics" data-view="nota-sobre-vnics"><button class="back-home">← Voltar para o início</button><div class="section-kicker">Capítulo</div><h1>Nota sobre VNICs</h1><h2 id="nota-sobre-vnics">Nota sobre VNICs</h2>
@@ -576,18 +601,18 @@ $  oci network route-table update \
 <div class="step">→ **Source/Destination Check** é um mecanismo de segurança presente nas VNICs que garante que a instância envie e receba apenas tráfego cujo IP de origem ou destino seja o da própria VNIC. Para instâncias que atuam como firewall ou roteador, esse recurso deve ser desabilitado.</div>
 <h3 id="vnics-em-m-ltiplas-sub-redes">VNICs em Múltiplas Sub-redes</h3>
 <p>Considere o exemplo a seguir:</p>
-<figure><img src="assets/assets/img/oci-vnic-1.png" alt="VNIC #1"><figcaption>VNIC #1</figcaption></figure>
+<figure><img src="assets/img/oci-vnic-1.png" alt="VNIC #1"><figcaption>VNIC #1</figcaption></figure>
 <p>O primeiro ponto importante dessa configuração é que, como já mencionado, um compute instance pode possuir múltiplas VNICs, sendo esse tipo de arquitetura bastante comum em cenários em que o compute é um firewall. </p>
 <p>Um detalhe importante é que a VNIC é um recurso vinculado a um <strong>Availability Domain (AD)</strong>. Isso significa que todas as VNICs associadas a um compute instance devem estar no mesmo Availability Domain. Não é possível, por exemplo, que uma instância tenha uma VNIC no AD-1 e outra no AD-2.</p>
 <p>Outro detalhe - talvez o mais importante - está relacionado ao roteamento entre múltiplas VNICs, considerando que cada uma pode estar associada a uma sub-rede diferente. Como cada VNIC pertence a uma sub-rede distinta, cada sub-rede possui seu próprio gateway (primeiro IP do CIDR) e sua própria tabela de rotas associada.</p>
 <p>Do ponto de vista das sub-redes, isso não representa um problema. A atenção deve estar voltada para o host, mais especificamente para a tabela de roteamento do sistema operacional. Esse comportamento não é configurado automaticamente e requer configuração manual.</p>
-<figure><img src="assets/assets/img/oci-vnic-2.png" alt="VNIC #2"><figcaption>VNIC #2</figcaption></figure></section>
+<figure><img src="assets/img/oci-vnic-2.png" alt="VNIC #2"><figcaption>VNIC #2</figcaption></figure></section>
 <section class="doc-section view" " id="firewall-e-conntrack-table" data-view="firewall-e-conntrack-table"><button class="back-home">← Voltar para o início</button><div class="section-kicker">Capítulo</div><h1>Firewall e Conntrack Table</h1><h2 id="firewall-e-conntrack-table">Firewall e Conntrack Table</h2>
 <h3 id="security-list-vs-network-security-group">Security List vs. Network Security Group</h3>
 <p>O serviço de rede do OCI disponibiliza dois tipos de firewalls, nas camadas 3 e 4 do modelo OSI, para controle de tráfego de entrada (ingress) e saída (egress). O funcionamento de ambos é idêntico: todo tráfego é bloqueado por padrão até que encontre uma regra que permita sua passagem (ALLOW). São eles:</p>
 <h4 id="security-list">Security List</h4>
 <p>Esse é o firewall associado à sub-rede e aplicado a todas as suas VNICs. Como resultado, todo o tráfego de entrada (ingress) e saída (egress) é inspecionado com base nas regras definidas na Security List.</p>
-<figure><img src="assets/assets/img/oci-seclist-1.png" alt="Security List #1"><figcaption>Security List #1</figcaption></figure>
+<figure><img src="assets/img/oci-seclist-1.png" alt="Security List #1"><figcaption>Security List #1</figcaption></figure>
 <p>Toda sub-rede deve ter pelo menos uma security list e pode ter no máximo, cinco security lists empilhadas. Nesse caso, todas as Security Lists são avaliadas em conjunto na busca por uma regra que permita o tráfego (ALLOW).</p>
 <div class="code-card"><div class="code-head"><span>bash</span><button class="copy">Copiar</button></div><pre><code>
 $ oci network security-list update \
@@ -606,7 +631,7 @@ $ oci network security-list update \
 </code></pre></div>
 <h4 id="network-security-group-nsg">Network Security Group (NSG)</h4>
 <p>Este é o firewall que pode ser associado a uma VNIC ou a um grupo de VNICs. Nesse caso, a inspeção do tráfego é realizada no nível da VNIC, permitindo que cada VNIC possua suas próprias regras exclusivas para controle do tráfego.</p>
-<figure><img src="assets/assets/img/oci-nsg-1.png" alt="Network Security Group (NSG) #1"><figcaption>Network Security Group (NSG) #1</figcaption></figure>
+<figure><img src="assets/img/oci-nsg-1.png" alt="Network Security Group (NSG) #1"><figcaption>Network Security Group (NSG) #1</figcaption></figure>
 <div class="code-card"><div class="code-head"><span>bash</span><button class="copy">Copiar</button></div><pre><code>
 $ oci network nsg create \
 &gt; --compartment-id &quot;ocid1.compartment.oc1..aaaaaaaa&quot; \
@@ -666,7 +691,7 @@ Jan 01 10:59:46 bastion systemd[1]: Started firewalld - dynamic firewall daemon.
 <h3 id="drg-dynamic-routing-gateway">DRG (Dynamic Routing Gateway)</h3>
 <p>O <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Tasks/managingDRGs.htm" target="_blank">DRG (Dynamic Routing Gateway)</a> é um componente responsável por possibilitar a conectividade e realizar o roteamento entre VCNs, seja na mesma região ou entre regiões diferentes. Além disso, ele permite a conectividade privada com ambientes on-premises, por meio do FastConnect ou do serviço de VPN Site-to-Site.</p>
 <p>Será utilizado o diagrama abaixo para ilustrar o funcionamento do roteamento no DRG.</p>
-<figure><img src="assets/assets/img/oci-drg-1.png" alt="DRG #1"><figcaption>DRG #1</figcaption></figure>
+<figure><img src="assets/img/oci-drg-1.png" alt="DRG #1"><figcaption>DRG #1</figcaption></figure>
 <p>Para criar o DRG, utiliza-se o comando a seguir:</p>
 <div class="code-card"><div class="code-head"><span>bash</span><button class="copy">Copiar</button></div><pre><code>
 $ oci network drg create \
@@ -689,13 +714,13 @@ $ oci network drg-attachment create \
 <p>Não apenas VCNs podem ser anexadas ao DRG, mas também outros recursos de rede. Entre os mais comuns estão o <strong>FastConnect (Virtual Circuit attachments)</strong>, a <strong>VPN Site-to-Site (IPSec Tunnel attachments)</strong> e o <strong>Remote Peering Connection (RPC attachments)</strong>, que permite a conexão entre dois DRGs, seja na mesma região ou em regiões diferentes.</p>
 <h4 id="drg-route-table-e-import-route-distribution">DRG Route Table e Import Route Distribution</h4>
 <p>Ao anexar uma VCN ao DRG, o anexo passa automaticamente a utilizar a tabela de rotas padrão denominada <strong>Autogenerated DRG Route Table for VCN Attachments</strong>. Essa tabela é criada no momento da criação do DRG e, por padrão, é associada a todas as VCNs anexadas a ele.</p>
-<figure><img src="assets/assets/img/oci-drg-rt-1.png" alt="DRG RT #1"><figcaption>DRG RT #1</figcaption></figure>
+<figure><img src="assets/img/oci-drg-rt-1.png" alt="DRG RT #1"><figcaption>DRG RT #1</figcaption></figure>
 <p>Já no caso do FastConnect, da VPN Site-to-Site ou do Remote Peering Connection (RPC), ao serem anexados ao DRG, a tabela de rotas padrão utilizada é a <strong>Autogenerated Drg Route Table for RPC, VC, and IPSec attachments</strong>.</p>
 <p>As tabelas de rotas do DRG tem um funcionamento diferente em comparação às tabelas de rotas das sub-redes. A principal diferença é que as regras de roteamento sempre têm como destino um outro anexo. Isso significa que não é possível definir um next-hop que aponte diretamente para um endereço IP, por exemplo.</p>
-<figure><img src="assets/assets/img/oci-drg-rt-2.png" alt="DRG RT #2"><figcaption>DRG RT #2</figcaption></figure>
+<figure><img src="assets/img/oci-drg-rt-2.png" alt="DRG RT #2"><figcaption>DRG RT #2</figcaption></figure>
 <p>Outro aspecto importante é que as rotas podem ser inseridas dinamicamente através de um recurso chamado <strong>Import Route Distribution</strong>. Assim, uma tabela de rotas do DRG pode incluir um <strong>Import Route Distribution</strong>, que permitirá a instalação dinâmica das redes de outros anexo(s).</p>
 <p>Na imagem abaixo, é possível ver que a tabela <strong>Autogenerated DRG Route Table for VCN Attachments</strong> utiliza o recurso de importação de rotas chamado <strong>Autogenerated Import Route Distribution for ALL routes</strong>.</p>
-<figure><img src="assets/assets/img/oci-drg-imp-1.png" alt="DRG IMP #1"><figcaption>DRG IMP #1</figcaption></figure>
+<figure><img src="assets/img/oci-drg-imp-1.png" alt="DRG IMP #1"><figcaption>DRG IMP #1</figcaption></figure>
 <p>Por padrão, o DRG inclui dois <strong>Import Route Distribution</strong>, que são:</p>
 <div class="bullet">▸ **Autogenerated Import Route Distribution for ALL routes**</div>
 <div class="bullet">▸ Usado automaticamente pela tabela de rotas **Autogenerated DRG Route Table for VCN Attachments**.</div>
@@ -710,9 +735,9 @@ $ oci network drg-attachment create \
 <div class="bullet">▸ Permite a importação das redes de um determinado tipo de anexo. Por exemplo, é possível importar as redes do tipo **Virtual Circuit** para o anexo DRG-ATTCH_VCN-A. Dessa maneira, as redes divulgadas do ambiente On-Premises por meio do FastConnect serão importadas para o anexo DRG-ATTCH_VCN-A.</div>
 <p>A ordem de importação das redes é gerenciada pelo parâmetro <strong>Priority</strong>, onde um número menor indica uma maior prioridade. As prioridades são processadas em ordem crescente, portanto, <strong>redes com um número de prioridade menor serão processadas primeiro</strong>.</p>
 <p>Na imagem abaixo, as redes do anexo DRG-ATTCH_VCN-B serão importadas primeiro para a tabela de rotas, seguidas pelas redes de todos os anexos do tipo Virtual Circuit e logo após, as redes do anexo do tipo Remote Peering Connection.</p>
-<figure><img src="assets/assets/img/oci-drg-imp-2.png" alt="DRG IMP #2"><figcaption>DRG IMP #2</figcaption></figure>
+<figure><img src="assets/img/oci-drg-imp-2.png" alt="DRG IMP #2"><figcaption>DRG IMP #2</figcaption></figure>
 <p>Além das rotas dinâmicas que podem ser importadas por meio do <strong>Import Route Distribution</strong>, as tabelas de roteamento do DRG também oferecem a opção de utilizar rotas estáticas. Vale lembrar que o next-hop nas tabelas do DRG deve ser sempre um anexo.</p>
-<figure><img src="assets/assets/img/oci-drg-rt-3.png" alt="DRG RT #3"><figcaption>DRG RT #3</figcaption></figure>
+<figure><img src="assets/img/oci-drg-rt-3.png" alt="DRG RT #3"><figcaption>DRG RT #3</figcaption></figure>
 <h4 id="fluxo-de-roteamento-no-drg">Fluxo de Roteamento no DRG</h4>
 <p>Após compreender o funcionamento das tabelas de rotas no DRG, avançamos para o próximo estágio, que aborda como as decisões de roteamento são realmente tomadas a partir do momento em que o pacote sai da sub-rede e passa a entrar no DRG.</p>
 <p>O processo é simples: a decisão de roteamento ocorre quando o pacote &quot;entra&quot; no DRG. Em outras palavras, <strong>a tabela de rotas do DRG é consultada assim que o pacote sai da sub-rede e entra no DRG</strong>.</p>
@@ -721,13 +746,13 @@ $ oci network drg-attachment create \
 <div class="step">→ A segunda decisão de roteamento ocorre no gateway da sub‑rede (10.100.20.1). O gateway consulta sua própria tabela de rotas para determinar o next‑hop (tabela de rotas da sub-rede). No exemplo, todo pacote com destino a rede 172.16.0.0/16 será encaminhado para o DRG.</div>
 <div class="step">→ A terceira etapa ocorre quando o pacote entra no DRG. Todo anexo do DRG possui sua própria tabela de rotas, que é consultada para determinar o next‑hop. Neste exemplo, todo pacote com destino à rede 172.16.0.0/16 será encaminhado para o anexo DRG‑ATTCH_VCN‑B.</div>
 <div class="step">→ Por fim, o pacote chega ao host de destino (172.16.50.100), que processa o pacote e encaminha a resposta ao IP de origem. o caminho inverso segue as mesmas decisões de roteamento para devolver o tráfego.</div>
-<figure><img src="assets/assets/img/drg-rt-fluxo-1.png" alt="DRG Fluxo #1"><figcaption>DRG Fluxo #1</figcaption></figure></section>
+<figure><img src="assets/img/drg-rt-fluxo-1.png" alt="DRG Fluxo #1"><figcaption>DRG Fluxo #1</figcaption></figure></section>
 <section class="doc-section view" " id="roteamento-via-firewall-central" data-view="roteamento-via-firewall-central"><button class="back-home">← Voltar para o início</button><div class="section-kicker">Capítulo</div><h1>Roteamento via Firewall Central</h1><h2 id="roteamento-via-firewall-central-hub-spoke">Roteamento via Firewall Central (hub &amp; spoke)</h2>
 <h3 id="topologia-hub-spoke">Topologia Hub &amp; Spoke</h3>
 <p>A topologia do tipo <strong>Hub &amp; Spoke</strong> é muito utilizada em ambientes corporativos, nos quais há, geralmente, a necessidade de um firewall mais sofisticado (VCN Hub), capaz de oferecer maior controle e proteção sobre o tráfego entre aplicações (VCNs Spoke), sejam entre VCNs ou no fluxo de dados entre o ambiente on-premises e o OCI. </p>
 <p>De forma simples, a ideia geral é: <strong>forçar, de forma transparente, que todo o tráfego entre aplicações passe por um firewall central.</strong></p>
 <p>Para ilustrar o funcionamento dessa topologia, será utilizado o diagrama abaixo:</p>
-<figure><img src="assets/assets/img/hub-spoke-1.png" alt="Hub &amp; Spoke #1"><figcaption>Hub &amp; Spoke #1</figcaption></figure>
+<figure><img src="assets/img/hub-spoke-1.png" alt="Hub &amp; Spoke #1"><figcaption>Hub &amp; Spoke #1</figcaption></figure>
 <h4 id="tabelas-de-rotas">Tabelas de Rotas</h4>
 <p>Falando das tabelas de roteamento, temos as que seguem:</p>
 <div class="bullet">▸ **Subnet Route Table**</div>
@@ -789,14 +814,14 @@ $ ./destroy.sh
 <p>Eu particularmente, ainda vejo diversas topologias que utilizam LPGs para interconectar VCNs. Por esse motivo, considero importante compreender como o roteamento funciona quando existe um LPG realizando a comunicação entre as VCNs.</p>
 <h3 id="drg-vs-lpg">DRG vs LPG</h3>
 <p>Além da forma utilizada para estabelecer a conectividade, as decisões de roteamento realizadas através do DRG diferem das utilizadas em cenários com LPG. Observe o diagrama abaixo:</p>
-<figure><img src="assets/assets/img/drg-vs-lpg-1.png" alt="LPG #1"><figcaption>LPG #1</figcaption></figure>
+<figure><img src="assets/img/drg-vs-lpg-1.png" alt="LPG #1"><figcaption>LPG #1</figcaption></figure>
 <p>No caso do DRG, a decisão de roteamento ocorre quando o pacote sai da VCN e entra no DRG. Nesse momento, é consultada a tabela de rotas associada ao anexo responsável pela conexão entre a VCN e o DRG.</p>
 <p>Já no cenário com LPG, existem duas tabelas de rotas, uma em cada extremidade da conexão, que podem ou não existir. Nesse modelo, a decisão de roteamento ocorre quando o pacote sai da VCN de origem e entra na VCN de destino.</p>
 <p>Sim, com o LPG é possível definir uma tabela de rotas para cada extremidade da conexão. No exemplo, existe uma tabela de rotas aplicada para os pacotes que entram na <code>vcn-a</code> e outra para os pacotes que entram na <code>vcn-b</code>. </p>
 <p>Mas vale lembrar que essas tabelas de rotas associadas ao LPG só fazem sentido quando há a necessidade de desviar ou direcionar o tráfego para destinos específicos após a entrada do pacote na VCN de destino. Caso contrário, não é necessário associar nenhuma tabela, pois o próprio LPG já realiza automaticamente a divulgação das redes das VCNs conectadas.</p>
 <h3 id="fluxo-de-roteamento">Fluxo de Roteamento</h3>
 <p>Observe o diagrama abaixo, que ilustra o fluxo de roteamento entre os recursos de rede da topologia de exemplo:</p>
-<figure><img src="assets/assets/img/oci-lpg-routing-1.png" alt="LPG #2"><figcaption>LPG #2</figcaption></figure>
+<figure><img src="assets/img/oci-lpg-routing-1.png" alt="LPG #2"><figcaption>LPG #2</figcaption></figure>
 <p>Suponha que a compute instance <code>vm-a</code> (<code>10.100.20.5</code>) precise se comunicar com a compute instance <code>vm-b</code> (<code>192.168.200.160</code>). As decisões de roteamento da origem para o destino, que fazem o tráfego passar pelo compute instance <code>firewall</code> (<code>192.168.200.160</code>), são:</p>
 <div class="step">→ A primeira decisão de roteamento ocorre no próprio host `10.100.20.5`. Nessa etapa o host determina o endereço IP e a interface de rede que será usada para enviar o tráfego. Normalmente existe uma **rota default** apontando para o gateway da sub‑rede (`10.100.20.1`).</div>
 <div class="step">→ Após o gateway da sub-rede (`10.100.20.1`) decidir que o pacote deve ser encaminhado ao DRG, a segunda decisão de roteamento ocorre quando o pacote entra no `drg-1`. Nesse momento, o DRG consulta a tabela de rotas `drg-rt_vcn`. Essa tabela possui um **Import Route Distribution** que instala todas as rotas divulgadas pelo **Remote Peering Connection**.</div>
@@ -858,9 +883,9 @@ exit 0
 <p>Vale lembrar que todas as sub-redes desta topologia de exemplo são privadas, o que impede o acesso direto a partir da Internet à console web do <a href="https://github.com/daniel-armbrust/armfirewall-proj" target="_blank">ArmFirewall</a>. Neste caso, o acesso pode ser realizado utilizando o recurso <a href="https://docs.oracle.com/en-us/iaas/Content/Bastion/Concepts/bastionoverview.htm" target="_blank">OCI Bastion</a>.</p></section>
 <section class="doc-section view" " id="network-visualizer" data-view="network-visualizer"><button class="back-home">← Voltar para o início</button><div class="section-kicker">Capítulo</div><h1>Network Visualizer</h1><h2 id="network-visualizer">Network Visualizer</h2>
 <p>O <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/network_visualizer.htm" target="_blank">Network Visualizer</a> é uma ferramenta do OCI útil para visualizar a topologia de rede criada em uma região. Acesse-a pelo menu <strong>Network</strong> &gt; <strong>Network Command Center</strong>.</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-1.png" alt="Network Viualizer #1"><figcaption>Network Viualizer #1</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-1.png" alt="Network Viualizer #1"><figcaption>Network Viualizer #1</figcaption></figure>
 <p>Após abrir a ferramenta, selecione o compartimento que contém os recursos de rede e marque <strong>Include child compartments</strong> para que seja feita uma varredura em todos os compartimentos filhos que estão abaixo do compartimento selecionado:</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-2.png" alt="Network Viualizer #2"><figcaption>Network Viualizer #2</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-2.png" alt="Network Viualizer #2"><figcaption>Network Viualizer #2</figcaption></figure>
 <p>Dica: <strong>Sempre que possível, concentre os recursos de rede em um único compartimento. Caso seja necessário utilizar múltiplos compartimentos, organize-os de forma hierárquica sob um mesmo compartimento pai. Isso facilita a visualização e o entendimento da topologia do ambiente através do Network Viualizer.</strong></p>
 <h3 id="representa-o-dos-componentes">Representação dos Componentes</h3>
 <p>O <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/network_visualizer.htm" target="_blank">Network Visualizer</a> usa símbolos para representar elementos da topologia:</p>
@@ -871,7 +896,7 @@ exit 0
 <div class="bullet">▸ **Quadrado/Retângulo**</div>
 <div class="bullet">▸ Conexão IPSec ou FastConnect.</div>
 <p>Cada conexão com o DRG é representada por um traço. No meio do traço há um pequeno círculo que indica a tabela de rotas do DRG.</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-3.png" alt="Network Viualizer #3"><figcaption>Network Viualizer #3</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-3.png" alt="Network Viualizer #3"><figcaption>Network Viualizer #3</figcaption></figure>
 <p>Há outros símbolos usados pelo <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/network_visualizer.htm" target="_blank">Network Visualizer</a> e, é recomendado sempre consultar a <a href="https://docs.oracle.com/en-us/iaas/Content/Network/Concepts/network_visualizer.htm" target="_blank">documentação oficial</a> da ferramenta pois, novos símbolos podem ser disponibilizados.</p>
 <h3 id="an-lise-de-roteamento">Análise de Roteamento</h3>
 <p>Suponha que você queira entender como um compute instance em uma sub-rede da VCN-APPL-1 se comunica com recursos da VCN-APPL-2. No exemplo, há uma instância chamada APPL-1 (<code>10.50.10.10</code>) na VCN-APPL-1 e outra chamada APPL-2 (<code>10.60.10.10</code>) na VCN-APPL-2.</p>
@@ -895,29 +920,29 @@ default via 10.50.10.1 dev enp0s6 proto dhcp src 10.50.10.10 metric 100
 <p>O comando <code>ip route show</code> mostra uma rota default (<code>default</code>) que envia todo o tráfego para o IP <code>10.50.10.1</code>, que é o gateway da sub-rede. Essa rota vale para todos os destinos, exceto <code>10.50.10.0/24</code> e <code>169.254.0.0/16</code>. </p>
 <h4 id="2-tabela-de-rotas-da-sub-rede">2. Tabela de rotas da sub-rede</h4>
 <p>Quando o tráfego chega ao gateway da sub-rede (<code>10.50.10.1</code>), a tabela de rotas da sub-rede (<code>rt_subnprv-1</code>) é consultada para determinar o próximo salto (next-hop).</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-4.png" alt="Network Viualizer #4"><figcaption>Network Viualizer #4</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-4.png" alt="Network Viualizer #4"><figcaption>Network Viualizer #4</figcaption></figure>
 <p>Nessa tabela há uma regra IPv4 que encaminha todo o tráfego para o DRG (<code>drg-interno</code>).</p>
 <h5 id="3-tabela-de-rotas-do-drg">3. Tabela de rotas do DRG</h5>
 <p>A próxima decisão de roteamento ocorre quando o _PACOTE ENTRA_ no DRG:</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-5.png" alt="Network Viualizer #5"><figcaption>Network Viualizer #5</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-5.png" alt="Network Viualizer #5"><figcaption>Network Viualizer #5</figcaption></figure>
 <p>Neste caso, consulta-se a tabela do DRG <code>drg-attch-rt_vcn-appl-1</code> para determinar o próximo salto:</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-6.png" alt="Network Viualizer #6"><figcaption>Network Viualizer #6</figcaption></figure>
-<figure><img src="/docs/assets/assets/img/network-visualizer-7.png" alt="Network Viualizer #7"><figcaption>Network Viualizer #7</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-6.png" alt="Network Viualizer #6"><figcaption>Network Viualizer #6</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-7.png" alt="Network Viualizer #7"><figcaption>Network Viualizer #7</figcaption></figure>
 <p>Redes importadas para este anexo via route distribution <code>import-routes_vcn-appl-1</code>:</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-8.png" alt="Network Viualizer #8"><figcaption>Network Viualizer #8</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-8.png" alt="Network Viualizer #8"><figcaption>Network Viualizer #8</figcaption></figure>
 <p>Observa‑se que o próximo salto para alcançar o host de destino (<code>10.60.10.10</code>) é o anexo <code>drg-attch_vcn-appl-2</code>.</p>
 <h4 id="4-sa-da-do-drg">4. Saída do DRG</h4>
 <p>Após a decisão de roteamento da tabela <code>drg-attch-rt_vcn-appl-1</code>, o tráfego é encaminhado diretamente para o anexo <code>drg-attch_vcn-appl-2</code>, onde se encontra o host de destino (<code>10.60.10.10</code>):</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-9.png" alt="Network Viualizer #9"><figcaption>Network Viualizer #9</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-9.png" alt="Network Viualizer #9"><figcaption>Network Viualizer #9</figcaption></figure>
 <p>Lembre que, se o anexo tiver uma tabela de rotas de VCN associada (<code>VCN Route Table</code>), haverá mais uma decisão de roteamento antes do tráfego alcançar o destino:</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-10.png" alt="Network Viualizer #10"><figcaption>Network Viualizer #10</figcaption></figure>
+<figure><img src="assets/img/network-visualizer-10.png" alt="Network Viualizer #10"><figcaption>Network Viualizer #10</figcaption></figure>
 <p>Esse tipo de configuração normalmente é usado para forçar o tráfego a passar por um firewall antes de atingir o destino. No caso da topologia apresentada, o tráfego ao entrar nas VCNs <code>vcn-fw-interno</code> ou <code>vcn-fw-externo</code>, será encaminhado para um <a href="https://docs.oracle.com/en-us/iaas/Content/NetworkLoadBalancer/home.htm" target="_blank">Network Load Balancer</a> para então ser encaminhado para o firewall.</p>
-<figure><img src="/docs/assets/assets/img/network-visualizer-11.png" alt="Network Viualizer #11"><figcaption>Network Viualizer #11</figcaption></figure></section>
+<figure><img src="assets/img/network-visualizer-11.png" alt="Network Viualizer #11"><figcaption>Network Viualizer #11</figcaption></figure></section>
 <section class="doc-section view" " id="policy-routing" data-view="policy-routing"><button class="back-home">← Voltar para o início</button><div class="section-kicker">Capítulo</div><h1>Policy Routing</h1><h2 id="oci-linux-policy-routing">OCI + Linux Policy Routing</h2>
 <h3 id="roteamento-por-destino">Roteamento por Destino</h3>
 <p>Por padrão, um roteador toma decisões de roteamento lendo o campo <strong>Destination Address</strong> do cabeçalho IP (e em teoria, mas não na prática, no campo TOS). Após obter o endereço IP presente no <strong>Destination Address</strong>, o próximo passo é consultar a tabela de rotas (<strong>route table</strong>), para determinar qual será a <strong>interface de rede de saída</strong> que será usada para <strong>encaminhar o pacote</strong>. Em outras palavras, a decisão de roteamento é baseada exclusivamente no <strong>endereço de destino</strong>, processo que também é chamado de <strong>Roteamento por Destino (destination-based routing)</strong>.</p>
 <p>Para facilitar, imagine que duas instâncias queiram se comunicar, cada uma em redes diferentes, e que exista um roteador Linux no meio interligando essas redes.</p>
-<figure><img src="/docs/assets/assets/img/oci-linux-rtb-1.png" alt="OCI Linux RT #1"><figcaption>OCI Linux RT #1</figcaption></figure>
+<figure><img src="assets/img/oci-linux-rtb-1.png" alt="OCI Linux RT #1"><figcaption>OCI Linux RT #1</figcaption></figure>
 <p>O fluxo de dados ocorre da seguinte maneira:</p>
 <div class="step">→ O **Compute Instance A (10.70.10.30)** - **origem** - quer comunicar-se com o **Compute Instance B (10.90.20.80)** - **destino**. Para isso, ele gera um pacote IP cujo cabeçalho contém os campos **Source Address** e **Destination Address** preenchidos com os respectivos endereços IP de origem e destino.</div>
 <div class="step">→ **Compute Instance A (10.70.10.30)** não sabe alcançar nenhum host da rede **10.90.20.0/24**, mas conhece o roteador pois, ambos estão na mesma rede **10.70.10.0/24** (diretamente conectados). Assim, o pacote é enviado ao roteador Linux **10.70.10.1**.</div>
@@ -1074,7 +1099,7 @@ $ iptables -t filter -A INPUT -p tcp --dport 80 -j ACCEPT
 <p>Com essa regra, todo pacote que entra no host e tem como destino a porta 80/TCP será aceito. Qualquer outro pacote que não corresponda a essa regra será descartado pela <strong>policy padrão DROP</strong> que foi definida.</p>
 <h3 id="fluxo-dos-pacotes-dentro-da-caixa">Fluxo dos Pacotes dentro da Caixa</h3>
 <p>Para entender melhor a relação entre os estágios de processamento apresentados, vamos utilizar o diagrama abaixo:</p>
-<figure><img src="/docs/assets/assets/img/oci-linux-pbr-1.png" alt="OCI Linux PBR #1"><figcaption>OCI Linux PBR #1</figcaption></figure>
+<figure><img src="assets/img/oci-linux-pbr-1.png" alt="OCI Linux PBR #1"><figcaption>OCI Linux PBR #1</figcaption></figure>
 <p>De acordo com o diagrama, a partir do momento em que o pacote entra pela interface de rede <strong>eth0</strong>, ele pode seguir dois caminhos possíveis. Para cada caminho, diferentes estágios de processamento são utilizados, conforme descrito abaixo:</p>
 <h4 id="entrega-local-local-delivery">Entrega Local (local delivery)</h4>
 <p>Pacotes destinados ao próprio host, para ser entregue a um processo local em execução, percorrem os seguintes estágios em ordem:</p>
@@ -1168,7 +1193,7 @@ $ iptables -t filter -A FORWARD -i eth0 -o eth1 -p icmp --icmp-type echo-request
 <p><strong>Policy Route</strong> aqui tem um único objetivo: definir qual gateway de sub-rede deve ser utilizado para cada fluxo de tráfego.</p>
 <p>Independentemente do fabricante do seu firewall, seja ele um pfSense, Fortinet, Palo Alto, Check Point, entre outros, a lógica geral do processamento de pacotes e decisão de roteamento dentro da caixa é similar. </p>
 <p>De acordo com a topologia de referência que está sendo estudada, o firewall Linux possui três VNICs, cada uma conectada a uma sub-rede distinta no OCI. Cada sub-rede possui seu próprio bloco CIDR e seu respectivo gateway, o que torna necessário compreender como o Linux toma decisões de roteamento quando há múltiplas interfaces de rede disponíveis.</p>
-<figure><img src="/docs/assets/assets/img/oci-linux-pbr-2.png" alt="OCI Linux PBR #2"><figcaption>OCI Linux PBR #2</figcaption></figure>
+<figure><img src="assets/img/oci-linux-pbr-2.png" alt="OCI Linux PBR #2"><figcaption>OCI Linux PBR #2</figcaption></figure>
 <h4 id="vnic-appl-enp0s6">vnic-appl (enp0s6)</h4>
 <p>Esta é primeira VNIC (primary) que é configurada no momento de criação da instância. </p>
 <p>As primeiras regras de <code>ip rule</code>, instruem o Kernel Linux a consultar a tabela de rotas <code>main</code> para qualquer comunicação com a rede <code>10.70.0.0/16</code> (VCN-FIREWALL-INTERNO):</p>
@@ -1251,7 +1276,7 @@ $ iptables -t nat -A POSTROUTING -o enp2s0 -j MASQUERADE
 <p>Esta é uma regra de NAT com a função de <strong>mascaramento</strong> (<code>MASQUERADE</code>). Ela é necessária porque, dentro do OCI, o tráfego com destino à Internet deve sair pelo endereço IP <code>10.90.20.60</code>, associado à VNIC <code>vnic-internet</code>.</p>
 <p>Neste caso, por exemplo, quando a comunicação é originada por um recurso da VCN-APPL-1 com destino à Internet, o pacote chega ao firewall e é processado pela cadeia de regras de <code>ip rule</code>.</p>
 <p>Após a decisão de roteamento (<code>POSTROUTING</code>) indicar a saída pelo gateway <code>10.90.20.1</code>, o pacote precisa ter seu endereço IP de origem alterado para o endereço IP da VNIC <code>vnic-internet</code>, ou seja, <code>10.90.20.60</code>. </p>
-<figure><img src="/docs/assets/assets/img/oci-linux-nat-1.png" alt="OCI Linux NAT #1"><figcaption>OCI Linux NAT #1</figcaption></figure>
+<figure><img src="assets/img/oci-linux-nat-1.png" alt="OCI Linux NAT #1"><figcaption>OCI Linux NAT #1</figcaption></figure>
 <p>Essa tradução do endereço de origem é realizada pela regra de <code>iptables</code> apresentada acima.</p>
 <h3 id="nota-final">Nota Final</h3>
 <p>Todas essas configurações de <strong>Policy Routing</strong> da topologia de referencia podem ser encontradas no script localizado em <code>terraform/vm-firewall/scripts/rc-firewall.sh</code>. </p>
@@ -1272,22 +1297,22 @@ $ iptables -t nat -A POSTROUTING -o enp2s0 -j MASQUERADE
 <p>Aqui quero apresentar alguns detalhes do serviço DNS Privado no qual é parte integrante de toda rede criada no OCI. Além disso, como você verá, o DNS Privado é um serviço fundamental em cenários de Nuvem Híbrida (mix de on-premises e cloud).</p>
 <h3 id="vcn-e-dns">VCN e DNS</h3>
 <p>A maioria dos recursos que são criados dentro de uma VCN necessitam de um serviço de DNS previamente configurado e funcional. Um bom exemplo é o próprio Serviço Database, que quando instruído para criar um novo banco de dados (DBCS), irá usar um serviço de DNS disponível para registrar o seu SCAN (Single Client Access Names):</p>
-<figure><img src="assets/assets/img/dns-dbcs-1.png" alt="DNS DBCS #1"><figcaption>DNS DBCS #1</figcaption></figure>
+<figure><img src="assets/img/dns-dbcs-1.png" alt="DNS DBCS #1"><figcaption>DNS DBCS #1</figcaption></figure>
 <p>Sem um DNS disponível, o banco de dados não consegue registrar o &quot;SCAN DNS name&quot;:</p>
-<figure><img src="assets/assets/img/dns-dbcs-2.png" alt="DNS DBCS #1"><figcaption>DNS DBCS #1</figcaption></figure>
+<figure><img src="assets/img/dns-dbcs-2.png" alt="DNS DBCS #1"><figcaption>DNS DBCS #1</figcaption></figure>
 <p>Esse relacionamento entre VCN e DNS é muito importante e garante o correto provisionamento dos recursos aqui no OCI. Para entender melhor, irei voltar um pouco atrás e mostrar alguns detalhes referente a criação de uma Virtual Cloud Network ou VCN.</p>
 <p>Sempre que criamos uma nova VCN, há a possibilidade de habilitar durante a sua criação o que chamamos de Resolução DNS (DNS Resolution):</p>
-<figure><img src="assets/assets/img/dns-vcn-1.png" alt="DNS VCN #1"><figcaption>DNS VCN #1</figcaption></figure>
+<figure><img src="assets/img/dns-vcn-1.png" alt="DNS VCN #1"><figcaption>DNS VCN #1</figcaption></figure>
 <p>Esta opção <code>Use DNS hostnames in this VCN</code> quando habilitada, possibilita o registro e a resolução de nomes DNS (hostnames) dos recursos que forem criados nesta VCN. Ou seja, um recurso quando criado, poderá ser “encontrado” (endereçado) pelo seu nome (hostname), além do seu endereço IP.</p>
 <p>Perceba que existe também a possibilidade de se especificar um DNS Label:</p>
-<figure><img src="assets/assets/img/dns-resolution-1.png" alt="DNS Resolution #1"><figcaption>DNS Resolution #1</figcaption></figure>
+<figure><img src="assets/img/dns-resolution-1.png" alt="DNS Resolution #1"><figcaption>DNS Resolution #1</figcaption></figure>
 <p>Além da VCN, existe a mesma opção de <code>DNS Resolution</code> disponível ao criar uma sub-rede:</p>
-<figure><img src="assets/assets/img/dns-vcn-2.png" alt="DNS Resolution #2"><figcaption>DNS Resolution #2</figcaption></figure>
+<figure><img src="assets/img/dns-vcn-2.png" alt="DNS Resolution #2"><figcaption>DNS Resolution #2</figcaption></figure>
 <p>Igual às configurações da VCN, é possível especificar um <code>DNS Label</code> também para a sub-rede. A união desses dois DNS Labels (VCN e sub-rede), junto com o nome de domínio <code>oraclevcn.com</code>, formam então um nome de domínio único (DNS Domain Name) que será usado para os recursos aqui criados:</p>
-<figure><img src="assets/assets/img/dns-resolution-2.png" alt="DNS Resolution #2"><figcaption>DNS Resolution #2</figcaption></figure>
+<figure><img src="assets/img/dns-resolution-2.png" alt="DNS Resolution #2"><figcaption>DNS Resolution #2</figcaption></figure>
 <p>Não é obrigatório, porém é uma boa prática, que os DNS Labels sejam únicos entre as VCNs que você criar. Dentro de uma mesma VCN, o DNS Label das sub-redes devem ser únicos.</p>
 <p>Habilitando o DNS dessa forma, nos permite especificar um Hostname para uma instância computacional quando esta for criada. Como resultado, temos o que chamamos de <strong>nome de domínio completamente qualificado (FQDN – Fully Qualified Domain Name)</strong>:</p>
-<figure><img src="assets/assets/img/dns-resolution-3.png" alt="DNS Resolution #3"><figcaption>DNS Resolution #3</figcaption></figure>
+<figure><img src="assets/img/dns-resolution-3.png" alt="DNS Resolution #3"><figcaption>DNS Resolution #3</figcaption></figure>
 <p>É uma boa prática sempre utilizar o FQDN da instância quando se deseja enviar mensagens para um host. Sempre utilize nome ao invés do endereço IP.</p>
 <p>Em conjunto com todo esse processo, que possibilita o registro e a resolução de nomes pela VCN e sub-rede, o OCI criou e configurou o DNS Privado. Vamos entender mais como ele funciona.</p>
 <h3 id="dns-privado">DNS Privado</h3>
@@ -1303,23 +1328,23 @@ $ iptables -t nat -A POSTROUTING -o enp2s0 -j MASQUERADE
 <h4 id="zona-dns">Zona DNS</h4>
 <p>Uma das características do _<a href="https://docs.oracle.com/pt-br/iaas/Content/DNS/Tasks/privatedns.htm" target="_blank">DNS</a>_ é ser um banco de dados de uso mais específico. Quando eu digo &quot;mais específico&quot;, quero dizer basicamente que o serviço só é capaz de manipular as informações referente ao nome dos hosts e endereços IPs. Além de que, no DNS, NÃO organizamos os dados em Tabelas como é feito em um banco de dados tradicional. No DNS, os dados são criados e organizados dentro do que chamamos de Zona DNS.</p>
 <p>No OCI, uma Zona DNS pode ser _Pública_ ou _Privada_:</p>
-<figure><img src="assets/assets/img/zona-publica-privada.png" alt="Zona DNS #1"><figcaption>Zona DNS #1</figcaption></figure>
+<figure><img src="assets/img/zona-publica-privada.png" alt="Zona DNS #1"><figcaption>Zona DNS #1</figcaption></figure>
 <p>Uma _Zona DNS Pública_, tem o propósito de armazenar os registros que serão expostos publicamente na Internet. Já a _Zona Privada_, só fornece respostas para os clientes que podem acessá-la por meio de uma VCN (visualização interna).</p>
 <p>Para o exemplo que foi apresentado, sobre a criação de uma VCN e sub-rede, o OCI criou automaticamente duas _Zonas Privadas_:</p>
-<figure><img src="assets/assets/img/NEW_private-zone-1.png" alt="Zona DNS Privada #1"><figcaption>Zona DNS Privada #1</figcaption></figure>
+<figure><img src="assets/img/NEW_private-zone-1.png" alt="Zona DNS Privada #1"><figcaption>Zona DNS Privada #1</figcaption></figure>
 <p>A zona de nome <code>subnprv1.vcna.oraclevcn.com</code> foi formada pela junção dos <code>DNS Labels</code> especificados junto com o domínio <code>oraclevcn.com</code>. Essa zona irá armazenar os registros dos recursos que são criados nesta sub-rede. Veja abaixo o exemplo de uma instância criada de nome <code>srv1</code> e seu endereço IP correspondente:</p>
-<figure><img src="assets/assets/img/NEW_private-zone-2.png" alt="Zona DNS Privada #2"><figcaption>Zona DNS Privada #2</figcaption></figure>
+<figure><img src="assets/img/NEW_private-zone-2.png" alt="Zona DNS Privada #2"><figcaption>Zona DNS Privada #2</figcaption></figure>
 <p>Já a outra zona de nome <code>100.10.in-addr.arpa</code>, será usada exclusivamente para armazenar os <strong>Registros Reversos (PTR)</strong> dos recursos. Estas servem para resolver o nome de forma inversa, pois resolve um endereço IP de volta para um _nome de domínio totalmente qualificado (FQDN)_:</p>
-<figure><img src="assets/assets/img/NEW_private-zone-3.png" alt="Zona DNS Privada #3"><figcaption>Zona DNS Privada #3</figcaption></figure>
+<figure><img src="assets/img/NEW_private-zone-3.png" alt="Zona DNS Privada #3"><figcaption>Zona DNS Privada #3</figcaption></figure>
 <p>Toda Zona criada e gerenciada pelo OCI, é protegida (protected). Com isso, seus registros podem ser visualizados, porém não é possível adicionar novos ou modificar os existentes.</p>
-<figure><img src="assets/assets/img/NEW_private-zone-4.png" alt="Zona DNS Privada #4"><figcaption>Zona DNS Privada #4</figcaption></figure>
-<figure><img src="assets/assets/img/NEW_private-zone-6.png" alt="Zona DNS Privada #5"><figcaption>Zona DNS Privada #5</figcaption></figure>
+<figure><img src="assets/img/NEW_private-zone-4.png" alt="Zona DNS Privada #4"><figcaption>Zona DNS Privada #4</figcaption></figure>
+<figure><img src="assets/img/NEW_private-zone-6.png" alt="Zona DNS Privada #5"><figcaption>Zona DNS Privada #5</figcaption></figure>
 <h4 id="view">View</h4>
 <p>Uma View tem o propósito de agrupar diferentes Zonas. Ao criamos uma Zona Privada, é obrigatório que essa pertença a uma Private View:</p>
-<figure><img src="assets/assets/img/NEW_private-view-1.png" alt="DNS Private View #1"><figcaption>DNS Private View #1</figcaption></figure>
+<figure><img src="assets/img/NEW_private-view-1.png" alt="DNS Private View #1"><figcaption>DNS Private View #1</figcaption></figure>
 <p>A VCN que foi criada como exemplo, também criou a sua própria Private View, adicionando a ela, as duas Zonas que vimos anteriormente:</p>
-<figure><img src="assets/assets/img/NEW_private-view-2.png" alt="DNS Private View #2"><figcaption>DNS Private View #2</figcaption></figure>
-<figure><img src="assets/assets/img/NEW_private-view-3.png" alt="DNS Private View #3"><figcaption>DNS Private View #3</figcaption></figure>
+<figure><img src="assets/img/NEW_private-view-2.png" alt="DNS Private View #2"><figcaption>DNS Private View #2</figcaption></figure>
+<figure><img src="assets/img/NEW_private-view-3.png" alt="DNS Private View #3"><figcaption>DNS Private View #3</figcaption></figure>
 <h4 id="dns-resolver">DNS Resolver</h4>
 <p>O DNS Resolver é o componente que consegue resolver e responder por uma consulta de DNS que é feita.</p>
 <p>Sabemos que os dispositivos em uma rede de computadores usam o endereço IP para se comunicar uns com os outros. O DNS é um serviço que, basicamente, possibilita nomearmos os dispositivos de uma rede (hostname). Ou seja, o nome passa a ser mais uma forma de endereçamento.</p>
@@ -1356,43 +1381,43 @@ Address: 10.0.1.159
 </code></pre></div>
 <h3 id="mais-sobre-o-dns-resolver">Mais sobre o DNS Resolver</h3>
 <p>O DNS Resolver possui diversas outras configurações que podem ser acessadas por dentro da VCN:</p>
-<figure><img src="assets/assets/img/NEW_dns-resolver-1.png" alt="DNS Resolver #1"><figcaption>DNS Resolver #1</figcaption></figure>
+<figure><img src="assets/img/NEW_dns-resolver-1.png" alt="DNS Resolver #1"><figcaption>DNS Resolver #1</figcaption></figure>
 <p>Nas suas configurações, são apresentadas duas informações importantes:</p>
 <div class="bullet">▸ **Dedicated virtual cloud network**</div>
 <div class="bullet">▸ Indica a VCN no qual este DNS Resolver pertence</div>
 <div class="bullet">▸ **Default Private View**</div>
 <div class="bullet">▸ Indica a View privada padrão que foi criada e está associada a este DNS Resolver.</div>
-<figure><img src="assets/assets/img/NEW_dns-resolver-2.png" alt="DNS Resolver #2"><figcaption>DNS Resolver #2</figcaption></figure>
+<figure><img src="assets/img/NEW_dns-resolver-2.png" alt="DNS Resolver #2"><figcaption>DNS Resolver #2</figcaption></figure>
 <p>A VCN quando criada com suporte a DNS, também criou e associou em conjunto um DNS Resolver. É obrigatório que um DNS Resolver esteja associado a uma VCN, e também a um Private View. Não se preocupe, todo esse processo é contemplado automaticamente durante a criação da VCN.</p>
 <p>De uma forma simples, temos abaixo os componentes do DNS Privado para a VCN que foi criada:</p>
-<figure><img src="assets/assets/img/dns-resolver_arch-1.png" alt="DNS Resolver #2"><figcaption>DNS Resolver #2</figcaption></figure>
+<figure><img src="assets/img/dns-resolver_arch-1.png" alt="DNS Resolver #2"><figcaption>DNS Resolver #2</figcaption></figure>
 <p>O desenho mostra uma Private View que agrupa duas zonas de nomes <code>subnprv1.vcna.oraclevcn.com</code> e <code>100.10.in-addr.arpa</code>. Essas são usadas para armazenar os hostnames e demais registros DNS que forem criados nesta sub-rede. Um detalhe importante é que, uma Zona Privada não pode existir sem pertencer a uma Private View. Isto é obrigatório!</p>
 <p>Uma ou mais Private Views podem estar associadas a um ou mais DNS Resolvers. Isso irá possibilitar o DNS Resolver em responder ou, resolver os nomes dos registros existentes nas Zonas contidas em suas respectivas Private Views.</p>
 <p>Ao criarmos uma outra VCN, por exemplo, uma outra Private View é criada em conjunto. Se a intenção é possibilitar que a VCN-A resolva os nomes da VCN-B, deve-se associar a Private View da VCN-B em VCN-A. Isto pode ser feito dentro das configurações do DNS Resolver da VCN-A, pela associação das Views. Veja:</p>
-<figure><img src="assets/assets/img/NEW_associated-1.png" alt="DNS Resolver #3"><figcaption>DNS Resolver #3</figcaption></figure>
+<figure><img src="assets/img/NEW_associated-1.png" alt="DNS Resolver #3"><figcaption>DNS Resolver #3</figcaption></figure>
 <p>Simples! Agora, o DNS Resolver da VCN-A consegue resolver os nomes contidos nas zonas da VCN-B.</p>
 <p>Uma outra opção importante quando configuramos o DNS Privado, diz respeito ao endereço IP do resolvedor. Já sabemos que, por padrão, o DNS Privado utiliza do endereço IP <code>169.254.169.254</code> e que este é um IP não roteável. Ou seja, ele só é acessível pelos recursos de dentro da sub-rede.</p>
 <p>Uma das ações ao interligarmos cloud e on-premises, é possibilitar a correta resolução de nomes entre esses dois ambientes. Para que o ambiente on-premises consiga resolver os nomes dos recursos existentes na cloud, primeiramente é necessário que ambos os DNS &quot;conversem&quot; via rede. Para isso, o DNS Resolver precisa de um endereço IP roteável que pode ser criado através da opção Endpoints:</p>
-<figure><img src="assets/assets/img/NEW_listening-endpoint-1.png" alt="DNS Resolver #4"><figcaption>DNS Resolver #4</figcaption></figure>
+<figure><img src="assets/img/NEW_listening-endpoint-1.png" alt="DNS Resolver #4"><figcaption>DNS Resolver #4</figcaption></figure>
 <p>Como é possível verificar, a criação do endpoint exige uma sub-rede. Dessa sub-rede, será usado um endereço IP no qual você pode especificar ou deixar o OCI escolher um que esteja livre para utilização. Também é possível especificar um _Network Security Group (NSG)_ para filtrar o tráfego (firewall), se este for o caso.</p>
 <p>Pelo endpoint, que agora pode ser acessado diretamente (<code>10.0.2.5</code>), é possível configurar o servidor DNS localizado no on-premises e este passar a resolver também, qualquer nome que termine em <code>oraclevcn.com</code>. Essa técnica é chamada de _<a href="https://social.technet.microsoft.com/wiki/contents/articles/2517.dns-conditional-forwarding-ou-encaminhadores-condicionais-pt-br.aspx" target="_blank">&quot;conditional forwarding&quot;</a>_:</p>
-<figure><img src="assets/assets/img/dns-resolver_arch-2.png" alt="DNS Resolver #5"><figcaption>DNS Resolver #5</figcaption></figure>
+<figure><img src="assets/img/dns-resolver_arch-2.png" alt="DNS Resolver #5"><figcaption>DNS Resolver #5</figcaption></figure>
 <p>No DNS Resolver, um endpoint pode ser do tipo Listening ou Forwarding. Já vimos que o modo Listening, irá disponibilizar um IP da sub-rede que pode ser usado para responder às consultas DNS externas (Internet) e também das Zonas associadas pelas Private Views.</p>
 <p>Já o modo Forwarding permite encaminhar as consultas para um outro servidor DNS externo. Sim, ele também implementa a técnica de _<a href="https://social.technet.microsoft.com/wiki/contents/articles/2517.dns-conditional-forwarding-ou-encaminhadores-condicionais-pt-br.aspx" target="_blank">&quot;conditional forwarding&quot;</a>_ que acabamos de descrever. A criação de um endpoint do tipo Forwarding segue o mesmo padrão:</p>
-<figure><img src="assets/assets/img/NEW_forwarding-endpoint-1.png" alt="DNS Resolver #6"><figcaption>DNS Resolver #6</figcaption></figure>
+<figure><img src="assets/img/NEW_forwarding-endpoint-1.png" alt="DNS Resolver #6"><figcaption>DNS Resolver #6</figcaption></figure>
 <p>Além da criação do endpoint Forwarding, deve ser criado algumas regras (rules) para que a resolução de nomes seja direcionada para um outro servidor DNS:</p>
-<figure><img src="assets/assets/img/NEW_forwarding-endpoint-2.png" alt="DNS Resolver #7"><figcaption>DNS Resolver #7</figcaption></figure>
+<figure><img src="assets/img/NEW_forwarding-endpoint-2.png" alt="DNS Resolver #7"><figcaption>DNS Resolver #7</figcaption></figure>
 <p>Neste exemplo, quando o DNS Resolver (<code>10.0.2.5</code>) receber uma consulta para resolver um nome que faz parte do domínio <code>meudominio.local</code>, este pedido será então encaminhado para o servidor DNS <code>192.168.1.10</code> realizar a resolução (&quot;conditional forwarding&quot;).</p>
-<figure><img src="assets/assets/img/NEW_dns-resolver-arch-3.png" alt="DNS Resolver #7"><figcaption>DNS Resolver #7</figcaption></figure>
+<figure><img src="assets/img/NEW_dns-resolver-arch-3.png" alt="DNS Resolver #7"><figcaption>DNS Resolver #7</figcaption></figure>
 <p>Nesta comunicação, o endereço IP do Forwarding se torna o cliente. Isso quer dizer que a conexão com destino ao on-premises, tem como origem o endereço IP do Forwarding (<code>10.0.2.6</code>).</p>
 <p>Além do on-premises, o Forwarding é também configurado dessa maneira quando se quer resolver nomes dos recursos de uma outra região.</p>
 <h3 id="casos-de-uso">Casos de Uso</h3>
 <h4 id="cen-rio-1-resolu-o-de-nomes-via-conditional-forwarding">Cenário #1 - Resolução de nomes via &quot;conditional forwarding&quot;</h4>
 <p>Este é o primeiro cenário de exemplo que demonstra a resolução de nomes entre on-premises e cloud.</p>
 <p>Observe o desenho abaixo:</p>
-<figure><img src="assets/assets/img/NEW_winad-1.png" alt="Casos de Uso #1"><figcaption>Casos de Uso #1</figcaption></figure>
+<figure><img src="assets/img/NEW_winad-1.png" alt="Casos de Uso #1"><figcaption>Casos de Uso #1</figcaption></figure>
 <p>Do lado do OCI, há um servidor DNS secundário (winad-1) que necessita também de resolver os nomes da cloud. Através da configuração do &quot;conditional forwarding&quot;, é possível direcionar as consultas do domínio <code>oraclevcn.com</code> para o DNS Resolver <code>169.254.169.254</code>:</p>
-<figure><img src="assets/assets/img/winad-conditional-forward-1.png" alt="Casos de Uso #2"><figcaption>Casos de Uso #2</figcaption></figure>
+<figure><img src="assets/img/winad-conditional-forward-1.png" alt="Casos de Uso #2"><figcaption>Casos de Uso #2</figcaption></figure>
 <p>Após essa configuração, o servidor DNS <code>10.0.4.2</code> já consegue resolver os nomes contidos na cloud:</p>
 <div class="code-card"><div class="code-head"><span>powershell</span><button class="copy">Copiar</button></div><pre><code>
 C:\&gt;nslookup - 10.0.4.2
@@ -1409,14 +1434,14 @@ Address: 10.0.4.2
 </code></pre></div>
 <h4 id="cen-rio-2-resolu-o-de-nomes-on-premises-e-oci">Cenário #2 - Resolução de nomes On-Premises e OCI</h4>
 <p>Observe a imagem de exemplo abaixo:</p>
-<figure><img src="assets/assets/img/NEW_dns-hibrido-2.png" alt="Casos de Uso #3"><figcaption>Casos de Uso #3</figcaption></figure>
+<figure><img src="assets/img/NEW_dns-hibrido-2.png" alt="Casos de Uso #3"><figcaption>Casos de Uso #3</figcaption></figure>
 <p>Este é um cenário típico onde já existe um servidor DNS Master (primário) do lado do on-premises, e um servidor DNS Slave (secundário) no OCI. O objetivo final é possibilitar a resolução de nomes de ambos os ambientes (cloud e on-premises), até porque existem aplicações no on-premises que necessitam acessar o banco de dados (dbcs-1) existente na cloud.</p>
 <p>Um detalhe importante. Para obter alta disponibilidade e escalabilidade, todo acesso ao banco de dados que é formado por um ou mais servidores (_<a href="https://www.oracle.com/br/database/real-application-clusters/" target="_blank">RAC – Real Application Clusters</a>_), deve ser via nome _<a href="https://docs.oracle.com/database/121/JJDBC/scan.htm#JJDBC29151" target="_blank">SCAN (Single Client Access Names)</a>_ e nunca diretamente por um endereço IP:</p>
-<figure><img src="assets/assets/img/NEW_scan-1.png" alt="Casos de Uso #4"><figcaption>Casos de Uso #4</figcaption></figure>
+<figure><img src="assets/img/NEW_scan-1.png" alt="Casos de Uso #4"><figcaption>Casos de Uso #4</figcaption></figure>
 <p>O primeiro item é a configuração do &quot;conditional forwarding&quot; no DNS Slave. Para resolver qualquer nome do domínio <code>oraclevcn.com</code>, a solicitação deve ser repassada para o DNS Resolver da sub-rede (<code>169.254.169.254</code>):</p>
-<figure><img src="assets/assets/img/NEW_forward-1.png" alt="Casos de Uso #5"><figcaption>Casos de Uso #5</figcaption></figure>
+<figure><img src="assets/img/NEW_forward-1.png" alt="Casos de Uso #5"><figcaption>Casos de Uso #5</figcaption></figure>
 <p>Em seguida, associa-se a Private View da VCN-SPOKE à VCN-HUB:</p>
-<figure><img src="assets/assets/img/NEW_private-view-4.png" alt="Casos de Uso #6"><figcaption>Casos de Uso #6</figcaption></figure>
+<figure><img src="assets/img/NEW_private-view-4.png" alt="Casos de Uso #6"><figcaption>Casos de Uso #6</figcaption></figure>
 <p>Essa configuração já possibilita a resolução do _<a href="https://docs.oracle.com/database/121/JJDBC/scan.htm#JJDBC29151" target="_blank">SCAN</a>_ a partir do DNS Slave:</p>
 <div class="code-card"><div class="code-head"><span>powershell</span><button class="copy">Copiar</button></div><pre><code>
 C:\&gt;nslookup - 10.0.4.2
@@ -1434,9 +1459,9 @@ Addresses: 10.1.1.51
 10.1.1.101
 </code></pre></div>
 <p>No DNS Master, o &quot;conditional forwarding&quot; para o domínio <code>oraclevcn.com</code>, deve usar o endereço IP do DNS Slave (<code>10.0.4.2</code>):</p>
-<figure><img src="assets/assets/img/NEW_forward-2.png" alt="Casos de Uso #7"><figcaption>Casos de Uso #7</figcaption></figure>
+<figure><img src="assets/img/NEW_forward-2.png" alt="Casos de Uso #7"><figcaption>Casos de Uso #7</figcaption></figure>
 <p>Feitos essas configurações, é possível agora simplificar a resolução do _<a href="https://docs.oracle.com/database/121/JJDBC/scan.htm#JJDBC29151" target="_blank">SCAN</a>_ para um nome que pertence ao domínio <code>meudominio.local</code>, que já é existente no on-premises:</p>
-<figure><img src="assets/assets/img/NEW_dns-config-1.png" alt="Casos de Uso #8"><figcaption>Casos de Uso #8</figcaption></figure>
+<figure><img src="assets/img/NEW_dns-config-1.png" alt="Casos de Uso #8"><figcaption>Casos de Uso #8</figcaption></figure>
 <p>Pronto! A partir de agora o on-premises resolve corretamente o _<a href="https://docs.oracle.com/database/121/JJDBC/scan.htm#JJDBC29151" target="_blank">SCAN</a>_ do banco de dados de exemplo:</p>
 <div class="code-card"><div class="code-head"><span>powershell</span><button class="copy">Copiar</button></div><pre><code>
 C:\&gt;nslookup - 192.168.1.10
@@ -1454,7 +1479,7 @@ Addresses: 10.1.1.33
 Aliases: dbcs-scan.meudominio.local
 </code></pre></div>
 <p>Por último, se houver a necessidade dos recursos da VCN-SPOKE em resolver os nomes do domínio <code>meudominio.local</code>, basta a configuração de uma regra que utiliza um endpoint do tipo _Forwarding_ no DNS Resolver da VCN-SPOKE:</p>
-<figure><img src="assets/assets/img/NEW_forward-3.png" alt="Casos de Uso #9"><figcaption>Casos de Uso #9</figcaption></figure>
+<figure><img src="assets/img/NEW_forward-3.png" alt="Casos de Uso #9"><figcaption>Casos de Uso #9</figcaption></figure>
 <p>Abaixo, um teste a partir do SRV-2 (<code>10.1.1.109</code>):</p>
 <div class="code-card"><div class="code-head"><span>shell</span><button class="copy">Copiar</button></div><pre><code>
 [opc@srv-2 ~]$ nslookup dbcs-scan.meudominio.local
@@ -1474,18 +1499,18 @@ Address: 10.1.1.33
 <h4 id="cen-rio-3-resolu-o-de-nomes-multi-regi-o">Cenário #3 - Resolução de nomes multi-região</h4>
 <p>Para o último cenário de exemplo, temos duas regiões distintas (<code>sa-saopaulo-1</code> e <code>sa-vinhedo-1</code>) conectadas por um _<a href="https://docs.oracle.com/en-us/iaas/Content/Network/Tasks/scenario_e.htm" target="_blank">RPC (Remote Peering Connection)</a>_.</p>
 <p>Observe a imagem abaixo e note que a região de Vinhedo (<code>sa-vinhedo-1</code>) foi escolhida para _Recuperação de Desastre (DR – Disaster Recovery)_:</p>
-<figure><img src="assets/assets/img/dns_dr-1.png" alt="Casos de Uso #10"><figcaption>Casos de Uso #10</figcaption></figure>
+<figure><img src="assets/img/dns_dr-1.png" alt="Casos de Uso #10"><figcaption>Casos de Uso #10</figcaption></figure>
 <p>No exemplo, temos duas VCNs em cada região. Um banco de dados primário (dbcs-primary) em São Paulo (<code>sa-saopaulo-1</code>) e sua versão standby (dbcs-standby) em Vinhedo (<code>sa-vinhedo-1</code>). Há um _<a href="https://docs.oracle.com/pt-br/iaas/dbcs/doc/use-oracle-data-guard-db-system.html" target="_blank">Data Guard</a>_ configurado entre os bancos que garante a alta disponibilidade e recuperação rápida, caso exista qualquer problema na região de São Paulo.</p>
 <p>O objetivo final é poder, de maneira correta, resolver os nomes dos recursos existentes em ambas as _<a href="https://docs.oracle.com/pt-br/iaas/Content/General/Concepts/regions.htm" target="_blank">regiões</a>_.</p>
 <p>A VCN-SP existente na região de São Paulo (<code>sa-saopaulo-1</code>), possui o domínio <code>vcnsp.oraclevcn.com</code> para os seus recursos. Já a VCN-DR em Vinhedo (<code>sa-vinhedo-1</code>), possui o domínio <code>vcndr.oraclevcn.com</code>.</p>
 <p>Começarei pelo DNS Resolver da VCN-SP, criando um endpoint do tipo Listening e outro do tipo Forwarding:</p>
-<figure><img src="assets/assets/img/dns_forward-region-1.png" alt="Casos de Uso #11"><figcaption>Casos de Uso #11</figcaption></figure>
+<figure><img src="assets/img/dns_forward-region-1.png" alt="Casos de Uso #11"><figcaption>Casos de Uso #11</figcaption></figure>
 <p>O mesmo procedimento é feito para a VCN-DR na região de Vinhedo:</p>
-<figure><img src="assets/assets/img/dns_forward-region-2.png" alt="Casos de Uso #12"><figcaption>Casos de Uso #12</figcaption></figure>
+<figure><img src="assets/img/dns_forward-region-2.png" alt="Casos de Uso #12"><figcaption>Casos de Uso #12</figcaption></figure>
 <p>De volta em VCN-SP, será configurado uma regra para resolução de qualquer nome do domínio <code>vcndr.oraclevcn.com</code> que utiliza o endpoint Listening da VCN-DR (<code>192.168.2.5</code>):</p>
-<figure><img src="assets/assets/img/dns_forward-region-3.png" alt="Casos de Uso #13"><figcaption>Casos de Uso #13</figcaption></figure>
+<figure><img src="assets/img/dns_forward-region-3.png" alt="Casos de Uso #13"><figcaption>Casos de Uso #13</figcaption></figure>
 <p>Na VCN-DR, o procedimento é o mesmo só mudando para o domínio <code>vcnsp.oraclevcn.com</code> e o endpoint Listening da VCN-SP (<code>10.0.2.5</code>): </p>
-<figure><img src="assets/assets/img/dns_forward-region-4.png" alt="Casos de Uso #14"><figcaption>Casos de Uso #14</figcaption></figure>
+<figure><img src="assets/img/dns_forward-region-4.png" alt="Casos de Uso #14"><figcaption>Casos de Uso #14</figcaption></figure>
 <p>O teste será resolver o nome _<a href="https://docs.oracle.com/database/121/JJDBC/scan.htm#JJDBC29151" target="_blank">SCAN</a>_ do banco de dados (dbcs-standby) localizado na VCN-DR a partir da VCN-SP:</p>
 <div class="code-card"><div class="code-head"><span>shell</span><button class="copy">Copiar</button></div><pre><code>
 [opc@srv-app-1 ~]$ nslookup dbcs-standby-scan.subndr.vcndr.oraclevcn.com
@@ -1501,7 +1526,7 @@ Name: dbcs-standby-scan.subndr.vcndr.oraclevcn.com
 Address: 192.168.1.24
 </code></pre></div>
 <p>Para finalizar é possível através do DNS Privado, criar a zona <code>meudominio.local</code> com os seus devidos registros. O exemplo abaixo demonstra a criação do registro do tipo CNAME <code>scan-dr.meudominio.local</code>:</p>
-<figure><img src="assets/assets/img/dns_forward-region-5.png" alt="Casos de Uso #15"><figcaption>Casos de Uso #15</figcaption></figure>
+<figure><img src="assets/img/dns_forward-region-5.png" alt="Casos de Uso #15"><figcaption>Casos de Uso #15</figcaption></figure>
 <div class="code-card"><div class="code-head"><span>shell</span><button class="copy">Copiar</button></div><pre><code>
 [opc@srv-app-1 ~]$ nslookup scan-dr.meudominio.local
 Server: 169.254.169.254

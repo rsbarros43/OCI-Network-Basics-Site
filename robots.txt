@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://rsbarros43.github.io/OCI-Network-Basics-Site/sitemap.xml
